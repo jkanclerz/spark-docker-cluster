@@ -22,5 +22,5 @@ make rebuild
 
 ## start cluster
 ```sh
-docker-compose up
+docker-compose up --scale spark-worker=3
 ```
