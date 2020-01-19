@@ -1,15 +1,19 @@
-FROM alpine:3
+FROM python:3.7-alpine
 
-ENV SCALA_VERSION=2.13.0
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk/
+
+ENV SCALA_VERSION=2.12.0
 ENV SCALA_HOME=/opt/scala
 
 ENV SPARK_VERSION=2.4.4
 ENV SPARK_HOME=/opt/spark
+ENV SPARK_PACKAGE="bin-hadoop2.7"
 
 ENV PATH="${SCALA_HOME}/bin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}"
 
-## INSTALL JAVA
-RUN apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+## INSTALL JAVA jdk8 is required cause spark is using it
+# https://stackoverflow.com/questions/53583199/pyspark-error-unsupported-class-file-major-version-55
+RUN apk --no-cache add openjdk8  --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 RUN apk add --no-cache --virtual=.build-dependencies wget ca-certificates
 
@@ -32,19 +36,24 @@ RUN export PATH="/usr/local/sbt/bin:$PATH" && \
 
 ## INSTALL SPARK
 RUN wget -qO "/tmp/spark-${SPARK_VERSION}.tgz" \
-    "http://apache.mirrors.tworzy.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.7.tgz"
+    "http://apache.mirrors.tworzy.net/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-${SPARK_PACKAGE}.tgz"
 
 RUN cd /tmp && \
     tar xzf "/tmp/spark-${SPARK_VERSION}.tgz" && \
-    mv "/tmp/spark-${SPARK_VERSION}-bin-hadoop2.7" "${SPARK_HOME}" && \
+    mv "/tmp/spark-${SPARK_VERSION}-${SPARK_PACKAGE}" "${SPARK_HOME}" && \
     rm -rf "/tmp/*"
 
+## IN ORDER TO ENABLE s3 access
+RUN wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/2.7.3/hadoop-aws-2.7.3.jar -P $SPARK_HOME/jars
+
+RUN wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk/1.7.4/aws-java-sdk-1.7.4.jar -P $SPARK_HOME/jars
+    
+
 RUN apk add --no-cache wget bash curl jq
-## INSTALL PYTHON
-RUN apk add --no-cache python3
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 ## CLEAN
 RUN apk del .build-dependencies
-
 
 ENTRYPOINT ["/bin/bash"]

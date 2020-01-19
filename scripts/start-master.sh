@@ -3,9 +3,8 @@
 export SPARK_MASTER_HOST=`hostname`
 export SPARK_LOCAL_IP=`hostname`
 
-spark-config.sh
-
-bash /opt/spark/bin/load-spark-env.sh
+bash ${SPARK_HOME}/sbin/spark-config.sh
+bash ${SPARK_HOME}/bin/load-spark-env.sh
 
 mkdir -p $SPARK_MASTER_LOG
 
